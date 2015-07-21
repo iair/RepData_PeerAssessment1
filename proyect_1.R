@@ -1,17 +1,4 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-author: "Iair Linker"
-date: "July 19, 2015"
-output: 
-  html_document:
-    keep_md: true
----
-
-
-## Loading and preprocessing the data
-
-##This part install the pachages needed to the assignment
-```{r, echo=TRUE}
+#This part install the pachages needed to the assignment
 if (!require("kernlab")) {
   install.packages("kernlab",repos="http://cran.rstudio.com/")
 }
@@ -27,79 +14,64 @@ if (!require("data.table")) {
   install.packages("data.table",repos="http://cran.rstudio.com/")
   library(data.table)
 }
-```
-
-##Load the data
-```{r, echo=TRUE}
+#Load the data
 activity <- read.csv("~/Documents/Formacion/MOOCS/Data Science Certificate/Reproducible Research/activity.csv")
 activity <- activity[,1:3]
-```
-
-###Question 1: What is mean total number of steps taken per day?
-##Clear the NA
-```{r, echo=TRUE}
+#Claear the NA
 activity$date<-as.POSIXct(activity$date)
 good<-complete.cases(activity)
 activity_no_NA<-activity[good,]
-head(activity_no_NA)
-```
-##Get the mean of steps by date
-```{r, echo=TRUE}
+#Get the mean of steps by date
 dt<-as.data.table(activity_no_NA)
 setkey(dt,date)
 act_no_NA_mean<-dt[,list(mean=mean(steps)),by=date]
 act_no_NA_mean$mean<-round(act_no_NA_mean$mean,1)
-head(act_no_NA_mean)
-```
-##Histogram of the total number of steps taken per day
-```{r, echo=TRUE}
+#Show the result
+act_no_NA_mean
+#Histogram of the total number of steps taken per day
 setkey(dt,date)
 act_no_NA_sum<-dt[,list(sum=sum(steps)),by=date]
 hist(act_no_NA_sum$sum,main="Histogram of total steps by date",
      xlab = "Total steps by day",ylab = "Count",col = "red",breaks = "FD",
      ylim=c(0,25))
+#This the mean and median of the total number of steps taken per day
 data.frame("Mean"=mean(act_no_NA_sum$sum),"Median"=median(act_no_NA_sum$sum))
-```
-#Question 2:The average daily activity pattern
-##The average daily activity pattern
-```{r, echo=TRUE}
+
+#Question 2
+#The average daily activity pattern
 step_by_interval_noNA<-group_by(activity_no_NA,interval)%>%summarise(mean_steps=round(mean(steps),1))
 plot(y = step_by_interval_noNA$mean_steps, x = step_by_interval_noNA$interval, 
      type = "l", xlab = "5-Minute-Interval", 
      main = "Average Daily Activity Pattern", ylab = "Average number of steps")
-```
-#Question 3: Imputing missing values
-##The sum of the NAs
-```{r, echo=TRUE}
+
+#Question 3
+#The sum of the NAs
 na<-apply(activity, 1, function(x) sum(is.na(x)))
 sum(na)
-```
-##Imput NA using the mean and create the new matrix with the imputed NA 
-```{r, echo=TRUE}
+#Get the index of the rows in activity which has steps with NA values
 indx_steps <- which(is.na(activity$steps))
+#Get the interval of the rows in activity matrix which has steps with NA values 
 indx_interval<-activity$interval[indx_steps]
+#Get the index of the rows in steps_by_interval matrix which has the interval 
+#which match with the steps with NA values 
 indx_interval_steps<-match(indx_interval,step_by_interval_noNA$interval)
+#Imput NA using the mean and create the new matrix with the imputed NA 
 activity_imp<-activity
 for(i in 1:length(indx_interval))
 {
         activity_imp$steps[indx_steps[i]]<-step_by_interval_noNA[indx_interval_steps[i],2] 
 }
 activity_imp$steps<-as.double(activity_imp$steps)
-head(activity_imp)
-```
 
-##Histogram of the total number of steps taken per day using the new matrix and
-##The mean and median of the total nª of steps taken p/day using the new matrix
-```{r, echo=TRUE}
+#Histogram of the total number of steps taken per day using the new matrix
 act_imp_sum<-group_by(activity_imp,date)%>%summarise(sum_steps=round(sum(steps),0))
 hist(act_imp_sum$sum,
      main="total steps by date after imput the NA with the maean",
      xlab = "Total steps by day",ylab = "Count",col = "red",breaks = "FD",
      ylim=c(0,25))
+#The mean and median of the total nª of steps taken p/day using the new matrix
 data.frame("Mean"=mean(act_imp_sum$sum),"Median"=median(act_imp_sum$sum))
-```
-##Plot both graphics so we can see the difference between each other
-```{r, echo=TRUE}
+#Plot both graphics so we can see the difference between each other
 par(mfrow=c(1,2),mar=c(4,4,2,2),oma=c(0.5,0.5,0.5,0))
 hist(act_no_NA_sum$sum,main="Total steps by date",
      xlab = "Total steps by day",ylab = "Count",col = "red",breaks = "FD",
@@ -110,23 +82,20 @@ hist(act_imp_sum$sum,
      xlab = "Total steps by day",ylab = "Count",col = "red",breaks = "FD",
      ylim=c(0,25))
 abline(v = median(act_imp_sum$sum), col = 4, lwd = 4)
-```
+
 
 #Question4:Difference in acitivity patterns between weekdays and weekends
 
-##Creating a new factor variable in the dataset with two levels -- 
-##"weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
-```{r, echo=TRUE}
+#Creating a new factor variable in the dataset with two levels -- 
+#"weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
 activity_imp$nameday_aux<-weekdays(activity_imp$date)
 activity_imp$nameday<-apply(activity_imp[,"nameday_aux",drop=FALSE],1,
                             function(x){
         ifelse(x=="Sunday","Weekend",ifelse(x=="Saturday","Weekend","Weekday"))
 })
-```
-##plot containing a time series plot (i.e. type = "l") of the 5-minute interval 
-##(x-axis) and the average number of steps taken,averaged across all weekday days 
-##or weekend days (y-axis)
-```{r, echo=TRUE}
+#plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, 
+#averaged across all weekday days or weekend days (y-axis)
+
 act_imp_weekday<-subset(activity_imp,nameday=="Weekday")
 act_imp_weekend<-subset(activity_imp,nameday=="Weekend")
 daily_act_weekday<-tapply(act_imp_weekday$steps,act_imp_weekday$interval,mean)
@@ -140,4 +109,4 @@ plot(y = daily_act_weekday, x = names(daily_act_weekday), type = "l",
      xlab = "5-Minute Interval", main = "Daily Activity Pattern on Weekdays", 
      ylab = "Average number of steps", ylim =c(0, 250),
      xlim=c(0,max(as.integer(names(daily_act_weekday)))))
-```
+
